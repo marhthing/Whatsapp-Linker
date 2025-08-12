@@ -16,6 +16,7 @@ Preferred communication style: Simple, everyday language.
 - **Admin Panel**: Password-protected admin interface (default: admin123)
 - **Public Interface**: Clean UI for WhatsApp linking with QR code and pairing code options
 - **Environment Variables**: All API functions now use DATABASE_URL secret instead of hardcoded values
+- **Code Cleanup**: Removed redundant server-side files and unused React components for cleaner architecture
 
 ## System Architecture
 
