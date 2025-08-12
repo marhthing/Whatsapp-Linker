@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MessageCircle, Smartphone, QrCode, Key, Copy, Check } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { linkSession } from "@/lib/api";
+import { linkSession, checkSessionStatus } from "@/lib/api";
 import QRScanner from "@/components/qr-scanner";
 import { Link } from "wouter";
 
@@ -17,12 +17,16 @@ export default function Home() {
   const [countryCode, setCountryCode] = useState("+1");
   const [sessionResult, setSessionResult] = useState<{ sessionId: string; pairingCode?: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState<string>("connecting");
+  const [isPolling, setIsPolling] = useState(false);
   const { toast } = useToast();
 
   const linkMutation = useMutation({
     mutationFn: linkSession,
     onSuccess: (data) => {
       setSessionResult(data);
+      setSessionStatus("connecting");
+      setIsPolling(true);
       toast({
         title: "Session Created",
         description: method === "qr" ? "QR code ready for scanning" : "Pairing code generated",
@@ -36,6 +40,55 @@ export default function Home() {
       });
     },
   });
+
+  // Poll session status when a session is created
+  useEffect(() => {
+    if (!isPolling || !sessionResult?.sessionId) return;
+
+    const pollStatus = async () => {
+      try {
+        const statusData = await checkSessionStatus(sessionResult.sessionId);
+        setSessionStatus(statusData.status);
+        
+        if (statusData.status === "active") {
+          setIsPolling(false);
+          toast({
+            title: "Session Linked!",
+            description: "Your WhatsApp has been successfully linked. Check your phone for confirmation.",
+          });
+        } else if (statusData.status === "failed") {
+          setIsPolling(false);
+          toast({
+            title: "Session Failed",
+            description: "Failed to link WhatsApp session. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to check session status:", error);
+      }
+    };
+
+    const interval = setInterval(pollStatus, 3000); // Poll every 3 seconds
+    
+    // Stop polling after 5 minutes to prevent infinite polling
+    const timeout = setTimeout(() => {
+      setIsPolling(false);
+      clearInterval(interval);
+      if (sessionStatus === "connecting") {
+        toast({
+          title: "Session Timeout",
+          description: "Session linking timed out. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }, 300000); // 5 minutes
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [isPolling, sessionResult?.sessionId, sessionStatus, toast]);
 
   const handleSubmit = () => {
     if (method === "pairing" && !phoneNumber) {
@@ -144,17 +197,18 @@ export default function Home() {
 
                 {method === "pairing" && (
                   <div className="space-y-6">
-                    <div className="max-w-sm mx-auto">
-                      <div className="bg-gray-50 rounded-lg p-6 mb-4">
-                        <Label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                          Phone Number
-                        </Label>
-                        <div className="flex">
-                          <Select value={countryCode} onValueChange={setCountryCode}>
-                            <SelectTrigger className="w-24 rounded-r-none">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-60">
+                    {!sessionResult && (
+                      <div className="max-w-sm mx-auto">
+                        <div className="bg-gray-50 rounded-lg p-6 mb-4">
+                          <Label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                            Phone Number
+                          </Label>
+                          <div className="flex">
+                            <Select value={countryCode} onValueChange={setCountryCode}>
+                              <SelectTrigger className="w-24 rounded-r-none">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-60">
                               <SelectItem value="+1">🇺🇸 +1</SelectItem>
                               <SelectItem value="+7">🇷🇺 +7</SelectItem>
                               <SelectItem value="+20">🇪🇬 +20</SelectItem>
@@ -380,6 +434,7 @@ export default function Home() {
                         {linkMutation.isPending ? "Generating..." : "Generate Pairing Code"}
                       </Button>
                     </div>
+                    )}
 
                     {sessionResult?.pairingCode && (
                       <div className="bg-gray-50 rounded-lg p-6 max-w-sm mx-auto">
@@ -412,7 +467,7 @@ export default function Home() {
               </>
             )}
 
-            {sessionResult && !sessionResult.pairingCode && (
+            {sessionResult && method === "qr" && sessionStatus === "active" && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-6 max-w-md mx-auto">
                 <div className="flex items-center justify-center mb-4">
                   <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -440,6 +495,58 @@ export default function Home() {
                   <div className="text-green-800">
                     <p className="font-medium">Next steps:</p>
                     <p>Copy the Session ID above and add it to your bot's .env file as SESSION_ID</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {sessionResult && method === "pairing" && sessionResult.pairingCode && sessionStatus !== "active" && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 max-w-md mx-auto mt-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Key className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">Pairing Code Generated!</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="text-blue-800">
+                    <p className="font-medium">Status: {sessionStatus === "connecting" ? "Waiting for WhatsApp connection..." : sessionStatus}</p>
+                    <p>Enter the pairing code above in WhatsApp to complete the setup.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {sessionResult && method === "pairing" && sessionStatus === "active" && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6 max-w-md mx-auto mt-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <Check className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold text-green-900 mb-2">Session Successfully Linked!</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="bg-white rounded-lg p-4 text-left">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-gray-700">Session ID:</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={copySessionId}
+                        className="h-auto p-1"
+                      >
+                        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                    <div className="font-mono text-xs text-gray-600 bg-gray-50 rounded p-2 break-all">
+                      {sessionResult.sessionId}
+                    </div>
+                  </div>
+                  <div className="text-green-800">
+                    <p className="font-medium">✅ Success!</p>
+                    <p>• Your WhatsApp has been linked successfully</p>
+                    <p>• A confirmation message has been sent to your WhatsApp</p>
+                    <p>• Copy the Session ID above for your bot configuration</p>
                   </div>
                 </div>
               </div>

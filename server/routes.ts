@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { randomUUID } from "crypto";
+import { sendSessionConfirmation } from "./whatsapp";
 import {
   linkSessionSchema,
   updateSessionSchema,
@@ -80,6 +81,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check session status (for frontend polling)
+  app.get("/api/session-status/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const session = await storage.getSession(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+
+      res.json({
+        sessionId: session.sessionId,
+        status: session.status,
+        whatsappName: session.whatsappName,
+        phoneNumber: session.phoneNumber,
+        lastActive: session.lastActive,
+      });
+    } catch (error) {
+      console.error("Get session status error:", error);
+      res.status(500).json({ message: "Failed to get session status" });
+    }
+  });
+
   // Update session (for bot to update session data)
   app.put("/api/session/:sessionId", async (req, res) => {
     try {
@@ -96,6 +120,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!session) {
         return res.status(404).json({ message: "Session not found" });
+      }
+
+      // If session becomes active and has a phone number, send confirmation message
+      if (updates.status === "active" && session.phoneNumber) {
+        await sendSessionConfirmation(sessionId, session.phoneNumber);
       }
 
       res.json(session);
