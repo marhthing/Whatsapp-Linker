@@ -60,7 +60,11 @@ The app will be available at `http://localhost:5000`
 
 ## Environment Variables
 
+### Required for Deployment
 - `DATABASE_URL`: PostgreSQL connection string (Neon database)
+
+### Development
+The DATABASE_URL is automatically configured from your Replit secrets during development.
 
 ## Admin Access
 

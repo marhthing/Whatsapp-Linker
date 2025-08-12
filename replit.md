@@ -15,6 +15,7 @@ Preferred communication style: Simple, everyday language.
 - **Database Schema**: Implemented proper schema with whatsapp_sessions, bot_settings, and admin_settings tables
 - **Admin Panel**: Password-protected admin interface (default: admin123)
 - **Public Interface**: Clean UI for WhatsApp linking with QR code and pairing code options
+- **Environment Variables**: All API functions now use DATABASE_URL secret instead of hardcoded values
 
 ## System Architecture
 
