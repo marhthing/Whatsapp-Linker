@@ -69,7 +69,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(sessions)
       .where(eq(sessions.sessionId, sessionId));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Bot settings operations

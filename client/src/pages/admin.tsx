@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { adminLogin, getAllSessions } from "@/lib/api";
 import SessionTable from "@/components/session-table";
 import { Link } from "wouter";
+import type { SessionsResponse } from "@shared/schema";
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -36,7 +37,7 @@ export default function Admin() {
     },
   });
 
-  const { data: sessionsData, isLoading } = useQuery({
+  const { data: sessionsData, isLoading } = useQuery<SessionsResponse>({
     queryKey: ["/api/admin/sessions"],
     enabled: isAuthenticated,
   });

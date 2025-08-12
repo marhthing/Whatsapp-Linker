@@ -90,3 +90,14 @@ export type LinkSessionRequest = z.infer<typeof linkSessionSchema>;
 export type UpdateSessionRequest = z.infer<typeof updateSessionSchema>;
 export type AdminLoginRequest = z.infer<typeof adminLoginSchema>;
 export type UpdateBotSettingsRequest = z.infer<typeof updateBotSettingsSchema>;
+
+// API Response types
+export type SessionsResponse = {
+  sessions: Session[];
+  stats: {
+    total: number;
+    active: number;
+    inactive: number;
+    failed: number;
+  };
+};

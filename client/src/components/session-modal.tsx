@@ -62,11 +62,11 @@ export default function SessionModal({ session, isOpen, onClose }: SessionModalP
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Created</label>
-              <div className="text-sm text-gray-500">{formatDate(session.createdAt)}</div>
+              <div className="text-sm text-gray-500">{formatDate(session.createdAt?.toString() || null)}</div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Last Seen</label>
-              <div className="text-sm text-gray-500">{formatDate(session.lastActive)}</div>
+              <div className="text-sm text-gray-500">{formatDate(session.lastActive?.toString() || null)}</div>
             </div>
           </div>
 

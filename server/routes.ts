@@ -56,7 +56,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Link session error:", error);
-      res.status(400).json({ message: "Failed to create session", error: error.message });
+      res.status(400).json({ 
+        message: "Failed to create session", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
     }
   });
 
@@ -98,7 +101,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(session);
     } catch (error) {
       console.error("Update session error:", error);
-      res.status(400).json({ message: "Failed to update session", error: error.message });
+      res.status(400).json({ 
+        message: "Failed to update session", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
     }
   });
 

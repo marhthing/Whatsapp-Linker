@@ -185,7 +185,7 @@ export default function Home() {
                         <h4 className="font-medium text-gray-900 mb-3">Your Pairing Code:</h4>
                         <div className="bg-white rounded-lg border-2 border-dashed border-gray-300 p-4 text-center">
                           <div className="text-2xl font-mono font-bold text-gray-900 mb-2">
-                            {sessionResult.pairingCode}
+                            {sessionResult?.pairingCode}
                           </div>
                           <p className="text-sm text-gray-500">Enter this in WhatsApp</p>
                         </div>

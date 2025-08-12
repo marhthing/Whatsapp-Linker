@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { deleteSession } from "@/lib/api";
-import SessionModal from "./session-modal";
+import SessionModal from "@/components/session-modal";
 import type { Session } from "@shared/schema";
 
 interface SessionTableProps {
@@ -149,10 +149,10 @@ export default function SessionTable({ sessions, isLoading }: SessionTableProps)
                   {getStatusBadge(session.status)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(session.createdAt)}
+                  {formatDate(session.createdAt?.toString() || null)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatRelativeTime(session.lastActive)}
+                  {formatRelativeTime(session.lastActive?.toString() || null)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex items-center space-x-2">
